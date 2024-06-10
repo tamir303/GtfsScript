@@ -23,7 +23,7 @@ The script reads GTFS data from CSV files, processes it, and inserts it into a P
 1. Clone this repository:
 
     ```bash
-    git clone https://github.com/your/repository.git
+    git clone https://github.com/tamir303/GtfsScript.git
     ```
 
 2. Install dependencies:
