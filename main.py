@@ -1,4 +1,5 @@
-import argparse
+import logging
+import sys
 
 from config import config
 from database.create import create_database
@@ -6,88 +7,73 @@ from database.validate import check_database_existence
 from database.insert import insert_postgres_table_from_df
 from tables.cache import get_gtfs_tables
 from files import get_gtfs_text_files
-import pandas as pd
 
 # Default config file
 DEFAULT_CONFIG_FILE = "config/config.yaml"
 
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description="Process GTFS data and insert into database.")
-parser.add_argument("--config", help="Path to the config file", default=DEFAULT_CONFIG_FILE)
-args = parser.parse_args()
-
-# Database connection parameters
-DB_NAME = config.get_database()
-DB_USER = config.get_user()
-DB_PASSWORD = config.get_password()
-DB_HOST = config.get_host()
-DB_PORT = config.get_port()
-
-# Files
-ROUTE_FILE = 'public/routes.txt'
-STOP_FILE = 'public/stops.txt'
-STOP_TIMES_FILE = 'public/stop_times.txt'
-TRIPS_FILE = 'public/trips.txt'
-
-# Tables
-LINE_TABLE_NAME = "line_stops"
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 
-def insert_tables(tables: list[tuple[str, pd.DataFrame]]) -> None:
-    for table_name, df in tables:
-        # Insert line stops dataframe into postgres db
-        insert_postgres_table_from_df(
-            df,
-            table_name,
-            DB_NAME,
-            DB_USER,
-            DB_PASSWORD,
-            DB_HOST,
-            DB_PORT
-        )
+def get_db_config() -> dict:
+    """Retrieve database configuration."""
+    return {
+        "name": config.get_database(),
+        "user": config.get_user(),
+        "password": config.get_password(),
+        "host": config.get_host(),
+        "port": config.get_port()
+    }
 
 
-def run_script():
+def main() -> None:
+    """Main function to run the GTFS data processing and insertion script."""
+    db_config = get_db_config()
+    logging.info("Starting GTFS data processing and database insertion script.")
+
     try:
-        # Download gtfs files if necessary
+        # Download GTFS files if necessary
         get_gtfs_text_files()
 
-        print("\033[92m")
-        print("Connecting to database...")
-        print(f"Database name: {DB_NAME}")
-        print(f"Username: {DB_USER}")
-        print("Password: ********")
-        print(f"Host: {DB_HOST}")
-        print(f"Port: {DB_PORT}")
-        print("\033[0m")
+        logging.info("Connecting to database...")
+        logging.info(f"Database name: {db_config['name']}")
+        logging.info(f"Username: {db_config['user']}")
+        logging.info("Password: ********")
+        logging.info(f"Host: {db_config['host']}")
+        logging.info(f"Port: {db_config['port']}")
 
-        if not check_database_existence(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT):
-            # Drops if exist
-            create_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
+        if not check_database_existence(db_config["name"], db_config["user"], db_config["password"], db_config["host"], db_config["port"]):
+            create_database(db_config["name"], db_config["user"], db_config["password"], db_config["host"], db_config["port"])
 
-        # Create two pandas dataframes from gtfs files
+        # Create a DataFrame from GTFS files
         line_stop_table = get_gtfs_tables(
-            ROUTE_FILE,
-            STOP_FILE,
-            STOP_TIMES_FILE,
-            TRIPS_FILE,
+            'public/routes.txt',
+            'public/stops.txt',
+            'public/stop_times.txt',
+            'public/trips.txt',
             use_cache=True
         )
 
-        # Insert line stops dataframe into postgres db
+        # Insert DataFrame into PostgreSQL database
         insert_postgres_table_from_df(
             line_stop_table,
-            LINE_TABLE_NAME,
-            DB_NAME,
-            DB_USER,
-            DB_PASSWORD,
-            DB_HOST,
-            DB_PORT
+            "line_stops",
+            db_config["name"],
+            db_config["user"],
+            db_config["password"],
+            db_config["host"],
+            db_config["port"]
         )
 
+        logging.info("GTFS data successfully processed and inserted into the database.")
+
     except Exception as e:
-        print(e.with_traceback(None))
+        logging.error(f"An error occurred: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
-    run_script()
+    main()

@@ -1,8 +1,19 @@
+import logging
+import sys
+
 import pandas as pd
 import psycopg2
 from psycopg2 import OperationalError
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from io import StringIO
+
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 
 def insert_postgres_table_from_df(
@@ -18,7 +29,7 @@ def insert_postgres_table_from_df(
     global cursor, conn
 
     try:
-        print(f"Adding table {table_name} to database {db_name}...")
+        logging.info(f"Adding table {table_name} to database {db_name}...")
 
         # Connect to PostgreSQL server
         conn = psycopg2.connect(
@@ -56,7 +67,7 @@ def insert_postgres_table_from_df(
 
         # Execute create table query
         cursor.execute(create_table_query)
-        print(f"Table '{table_name}' created successfully.")
+        logging.info(f"Table '{table_name}' created successfully.")
 
         # Insert data into the table
         sio = StringIO()
@@ -64,10 +75,10 @@ def insert_postgres_table_from_df(
         sio.seek(0)
         cursor.copy_from(sio, f"{table_name}", sep='\t', null="")
         conn.commit()
-        print(f"Data inserted into table '{table_name}' successfully.")
+        logging.info(f"Data inserted into table '{table_name}' successfully.")
 
     except OperationalError as e:
-        print(f"Error: {e}")
+        logging.error(f"Error: {e}")
         raise e
 
     finally:

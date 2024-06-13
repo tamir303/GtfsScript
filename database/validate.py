@@ -1,5 +1,15 @@
+import logging
+import sys
+
 import psycopg2
 from psycopg2 import OperationalError
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 
 def check_database_existence(
@@ -34,6 +44,6 @@ def check_database_existence(
         return result is not None
 
     except OperationalError as e:
-        print(f"Error: {e}")
+        logging.error(f"Error: {e}")
         raise e
 

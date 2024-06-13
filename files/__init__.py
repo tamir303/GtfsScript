@@ -1,9 +1,19 @@
+import logging
+import sys
+
 import requests
 import os
 from zipfile import ZipFile
 from datetime import datetime
 import urllib3
 from tqdm import tqdm
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -40,27 +50,28 @@ def __download_gtfs_files(url, download_dir) -> None:
                             f.write(data)
                             pbar.update(len(data))
 
-                    print("GTFS zip file downloaded successfully.")
+                    logging.info("GTFS zip file downloaded successfully.")
 
             else:
-                print("Failed to download GTFS files. Status code:", response.status_code)
+                logging.error(f'Failed to download GTFS files. Status code: {response.status_code}')
 
         # Extract relevant text files
         __extract_gtfs_text_files(zip_file_path, download_dir)
     except Exception as e:
-        print("Error occurred while downloading GTFS files:", e)
+        logging.error(f'Error occurred while downloading GTFS files: {e}')
 
 
 def __extract_gtfs_text_files(zip_file_path, download_dir) -> None:
     try:
-        print("Extracting GTFS text files...")
+        logging.info("Extracting GTFS text files...")
         with ZipFile(zip_file_path, 'r') as zip_ref:
             # Extract only the relevant text files
             for file in ["routes.txt", "stop_times.txt", "stops.txt", "trips.txt"]:
                 zip_ref.extract(file, download_dir)
-        print("GTFS text files extracted successfully.")
+        logging.info("GTFS text files extracted successfully.")
+
     except Exception as e:
-        print("Error occurred while extracting GTFS text files:", e)
+        logging.error(f'Error occurred while extracting GTFS text files: {e}')
 
 
 def __check_gtfs_files_exist(download_dir) -> bool:
@@ -80,4 +91,4 @@ def get_gtfs_text_files() -> None:
     if not __check_gtfs_files_exist(download_dir):
         __download_gtfs_files(gtfs_zip_url, download_dir)
     else:
-        print("GTFS files already exist.")
+        logging.info("GTFS files already exist.")

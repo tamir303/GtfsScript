@@ -1,5 +1,15 @@
+import logging
+import sys
+
 import psycopg2
 from psycopg2 import OperationalError
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 
 def create_database(
@@ -35,12 +45,12 @@ def create_database(
         # Grant privileges (optional)
         cursor.execute(f"GRANT ALL PRIVILEGES ON DATABASE {db_name} TO {user};")
 
-        print("Database created successfully!")
+        logging.info("Database created successfully!")
 
         # Close cursor and connection
         cursor.close()
         conn.close()
 
     except OperationalError as e:
-        print(f"Error: {e}")
+        logging.error(f"Error: {e}")
         raise e

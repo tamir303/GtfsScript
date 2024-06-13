@@ -1,7 +1,18 @@
+import logging
+import sys
+
 import pandas as pd
 import functools
 from typing import Tuple
 from tqdm import tqdm
+
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 
 @functools.lru_cache(maxsize=None)
@@ -21,19 +32,19 @@ def __load_gtfs_data(
     with tqdm(total=4, desc="Loading GTFS Text files") as pbar:
         routes = pd.read_csv(routes_file)
         pbar.update(1)
-        print("\nLoaded {} routes.txt".format(routes.shape[0]))
+        logging.info("Loaded {} routes.txt".format(routes.shape[0]))
 
         stop_times = pd.read_csv(stop_times_file)
         pbar.update(1)
-        print("\nLoaded {} stop_times.txt".format(stop_times.shape[0]))
+        logging.info("Loaded {} stop_times.txt".format(stop_times.shape[0]))
 
         stops = pd.read_csv(stops_file)
         pbar.update(1)
-        print("\nLoaded {} stops.txt".format(stops.shape[0]))
+        logging.info("Loaded {} stops.txt".format(stops.shape[0]))
 
         trips = pd.read_csv(trips_file)
         pbar.update(1)
-        print("\nLoaded {} trips.txt".format(trips.shape[0]))
+        logging.info("Loaded {} trips.txt".format(trips.shape[0]))
 
     return routes, stop_times, stops, trips
 
@@ -51,7 +62,7 @@ def __create_bus_tables(
         pd.DataFrame: A DataFrame containing the line number, stop name, stop order, latitude, and longitude.
     """
     with tqdm(total=6, desc="Loading GTFS Text files") as pbar:
-        print("Creating unified GTFS dataframe...\n")
+        logging.info("Creating unified GTFS dataframe...")
 
         # Merge trips with routes to get route information
         trips_routes_df = pd.merge(trips_df, routes_df, on='route_id', how='inner')
