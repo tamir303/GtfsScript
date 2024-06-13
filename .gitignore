@@ -1,6 +1,8 @@
 # Ignore text files
 *.txt
 
+!requirements.txt
+
 # Ignore zip files
 *.zip
 
