@@ -31,7 +31,6 @@ TRIPS_FILE = 'public/trips.txt'
 
 # Tables
 LINE_TABLE_NAME = "line_stops"
-STOP_DETAILS_NAME = "stop_details"
 
 
 def insert_tables(tables: list[tuple[str, pd.DataFrame]]) -> None:
@@ -67,7 +66,7 @@ def run_script():
             create_database(DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT)
 
         # Create two pandas dataframes from gtfs files
-        line_stop_table, stop_details_table = get_gtfs_tables(
+        line_stop_table = get_gtfs_tables(
             ROUTE_FILE,
             STOP_FILE,
             STOP_TIMES_FILE,
@@ -75,11 +74,19 @@ def run_script():
             use_cache=True
         )
 
-        # Insert each table into postgres db
-        insert_tables([(LINE_TABLE_NAME, line_stop_table), (STOP_DETAILS_NAME, stop_details_table)])
+        # Insert line stops dataframe into postgres db
+        insert_postgres_table_from_df(
+            line_stop_table,
+            LINE_TABLE_NAME,
+            DB_NAME,
+            DB_USER,
+            DB_PASSWORD,
+            DB_HOST,
+            DB_PORT
+        )
 
     except Exception as e:
-        print(e.with_traceback())
+        print(e.with_traceback(None))
 
 
 if __name__ == "__main__":

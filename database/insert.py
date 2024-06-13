@@ -12,7 +12,8 @@ def insert_postgres_table_from_df(
         user: str,
         password: str,
         host: str = "localhost",
-        port: str = "5432"):
+        port: str = "5432"
+) -> None:
 
     global cursor, conn
 

@@ -1,15 +1,16 @@
 import pandas as pd
 import functools
+from typing import Tuple
+from tqdm import tqdm
 
-from pandas import DataFrame
 
-
+@functools.lru_cache(maxsize=None)
 def __load_gtfs_data(
         routes_file: str,
         stops_file: str,
         stop_times_file: str,
         trips_file: str
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Loads GTFS data from CSV files.
 
@@ -17,10 +18,22 @@ def __load_gtfs_data(
         tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing four pandas DataFrames
         representing routes, trips, stop times, and stops data.
     """
-    routes = pd.read_csv(routes_file)
-    stop_times = pd.read_csv(stop_times_file)
-    stops = pd.read_csv(stops_file)
-    trips = pd.read_csv(trips_file)
+    with tqdm(total=4, desc="Loading GTFS Text files") as pbar:
+        routes = pd.read_csv(routes_file)
+        pbar.update(1)
+        print("\nLoaded {} routes.txt".format(routes.shape[0]))
+
+        stop_times = pd.read_csv(stop_times_file)
+        pbar.update(1)
+        print("\nLoaded {} stop_times.txt".format(stop_times.shape[0]))
+
+        stops = pd.read_csv(stops_file)
+        pbar.update(1)
+        print("\nLoaded {} stops.txt".format(stops.shape[0]))
+
+        trips = pd.read_csv(trips_file)
+        pbar.update(1)
+        print("\nLoaded {} trips.txt".format(trips.shape[0]))
 
     return routes, stop_times, stops, trips
 
@@ -30,40 +43,47 @@ def __create_bus_tables(
         stop_times_df: pd.DataFrame = None,
         stops_df: pd.DataFrame = None,
         trips_df: pd.DataFrame = None
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     """
-    Creates bus data tables from CSV files
+    Creates a table with line number, stop name, stop order, latitude, and longitude.
 
     Returns:
-        tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing two pandas DataFrames
-        representing gtfs tables, one for routes and one for stops
+        pd.DataFrame: A DataFrame containing the line number, stop name, stop order, latitude, and longitude.
     """
+    with tqdm(total=6, desc="Loading GTFS Text files") as pbar:
+        print("Creating unified GTFS dataframe...\n")
 
-    # Merge routes and trips on route_id
-    routes_trips_df = pd.merge(routes_df, trips_df, on='route_id', how='inner')
+        # Merge trips with routes to get route information
+        trips_routes_df = pd.merge(trips_df, routes_df, on='route_id', how='inner')
+        pbar.update(1)
 
-    # Merge routes_trips with stop_times on trip_id
-    bus_trips_df = pd.merge(routes_trips_df, stop_times_df, on='trip_id', how='inner')
+        # Merge stop_times with trips_routes to get route and stop times information
+        stop_times_trips_routes_df = pd.merge(stop_times_df, trips_routes_df, on='trip_id', how='inner')
+        pbar.update(1)
 
-    # Extract unique trip_id and stop_id for bus routes
-    line_stop_table = bus_trips_df[['route_short_name', 'stop_id']].drop_duplicates()
+        # Merge the above result with stops to get the stop details
+        full_df = pd.merge(stop_times_trips_routes_df, stops_df, on='stop_id', how='inner')
+        pbar.update(1)
 
-    # Rename route_short_name to route_line
-    line_stop_table.rename(columns={'route_short_name': 'route_line'}, inplace=True)
+        # Select and rename the relevant columns
+        line_stop_df = full_df[['route_short_name', 'stop_name', 'stop_sequence', 'stop_lat', 'stop_lon']]
+        line_stop_df.rename(columns={
+            'route_short_name': 'line_number',
+            'stop_name': 'stop_name',
+            'stop_sequence': 'stop_order',
+            'stop_lat': 'lat',
+            'stop_lon': 'lng'
+        }, inplace=True)
+        pbar.update(1)
 
-    # Sort by route_line in ascending order
-    line_stop_table.sort_values(by='route_line', inplace=True)
+        # Remove duplicates and null
+        line_stop_df.dropna(inplace=True)
+        pbar.update(1)
 
-    # Merge stop_times and stops to get stop details
-    stop_details_df = pd.merge(bus_trips_df[['trip_id', 'stop_id', 'arrival_time']], stops_df, on='stop_id', how='inner')
+        line_stop_df.drop_duplicates(inplace=True)
+        pbar.update(1)
 
-    # Drop unnecessary columns
-    stop_details_df = stop_details_df[['stop_id', 'arrival_time', 'stop_lat', 'stop_lon']].drop_duplicates()
-
-    # Group by stop_id to get unique stop_id with the earliest arrival_time
-    stop_details_df = stop_details_df.groupby('stop_id').first().reset_index()
-
-    return line_stop_table, stop_details_df
+    return line_stop_df
 
 
 @functools.lru_cache(maxsize=None)
@@ -72,7 +92,7 @@ def create_gtfs_tables(
         stops_file: str,
         stop_times_file: str,
         trips_file: str
-) -> tuple[DataFrame, DataFrame]:
+) -> pd.DataFrame:
     """
     Creates GTFS tables line_stop_table and stop_details_table.
 
