@@ -3,7 +3,7 @@
 database: gtfs
 user: postgres
 password: 12683579
-host: PostgresContainer
+host: smartbus-PostgresContainer-1
 port: 5432
 
 
