@@ -3,7 +3,7 @@
 database: gtfs
 user: postgres
 password: 12683579
-host: PostgresContainer
+host: localhost
 port: 5432
 
 
