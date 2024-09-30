@@ -1,5 +1,3 @@
-Sure, here's a README for your GTFS data processing and database insertion script:
-
 ---
 
 # GTFS Data Processing and Database Insertion
@@ -71,5 +69,3 @@ port: 5432
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
-
-Feel free to customize it further based on your specific requirements!
