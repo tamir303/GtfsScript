@@ -46,8 +46,7 @@ def main() -> None:
         logging.info(f"Host: {db_config['host']}")
         logging.info(f"Port: {db_config['port']}")
 
-        if not check_database_existence(db_config["name"], db_config["user"], db_config["password"], db_config["host"], db_config["port"]):
-            create_database(db_config["name"], db_config["user"], db_config["password"], db_config["host"], db_config["port"])
+        create_database(db_config["name"], db_config["user"], db_config["password"], db_config["host"], db_config["port"])
 
         # Create a DataFrame from GTFS files
         line_stop_table = get_gtfs_tables(
@@ -55,6 +54,7 @@ def main() -> None:
             'public/stops.txt',
             'public/stop_times.txt',
             'public/trips.txt',
+            'public/agency.txt',
             use_cache=True
         )
 

@@ -66,7 +66,7 @@ def __extract_gtfs_text_files(zip_file_path, download_dir) -> None:
         logging.info("Extracting GTFS text files...")
         with ZipFile(zip_file_path, 'r') as zip_ref:
             # Extract only the relevant text files
-            for file in ["routes.txt", "stop_times.txt", "stops.txt", "trips.txt"]:
+            for file in ["routes.txt", "stop_times.txt", "stops.txt", "trips.txt", "agency.txt"]:
                 zip_ref.extract(file, download_dir)
         logging.info("GTFS text files extracted successfully.")
 
@@ -76,7 +76,7 @@ def __extract_gtfs_text_files(zip_file_path, download_dir) -> None:
 
 def __check_gtfs_files_exist(download_dir) -> bool:
     # Check if all GTFS files exist in the directory
-    for file in ["routes.txt", "stop_times.txt", "stops.txt", "trips.txt"]:
+    for file in ["routes.txt", "stop_times.txt", "stops.txt", "trips.txt", "agency.txt"]:
         if not os.path.exists(os.path.join(download_dir, file)):
             return False
     return True

@@ -8,12 +8,13 @@ def get_gtfs_tables(
         stops_file: str,
         stop_times_file: str,
         trips_file: str,
+        agency_file: str,
         use_cache: bool = True
 ) -> pd.DataFrame:
     if use_cache:
         # Use the cached version
-        return create_gtfs_tables(routes_file, stops_file, stop_times_file, trips_file)
+        return create_gtfs_tables(routes_file, stops_file, stop_times_file, trips_file, agency_file)
     else:
         # Bypass the cache by directly calling the function without using the cached result
         create_gtfs_tables.cache_clear()  # Clear the cache if needed
-        return create_gtfs_tables.__wrapped__(routes_file, stops_file, stop_times_file, trips_file)
+        return create_gtfs_tables.__wrapped__(routes_file, stops_file, stop_times_file, trips_file, agency_file)
