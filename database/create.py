@@ -1,6 +1,5 @@
 import logging
 import sys
-
 import psycopg2
 from psycopg2 import OperationalError, sql
 
@@ -30,29 +29,42 @@ def create_database(
         conn.autocommit = True  # Enable autocommit to execute commands like CREATE/DROP
         cursor = conn.cursor()
 
-        # Check if the database exists using a parameterized query
-        cursor.execute(sql.SQL("SELECT 1 FROM pg_database WHERE datname = %s;"), [db_name])
+        # Check if the database exists
+        try:
+            cursor.execute(sql.SQL("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s;"), [db_name])
+            exists = cursor.fetchone() is not None
 
-        # Drop the database if it exists
-        cursor.execute(sql.SQL(f"DROP DATABASE IF EXISTS {db_name}"))
-        logging.info(f"Database '{db_name}' dropped successfully!")
+            if exists:
+                # If it exists, drop the database
+                cursor.execute(sql.SQL("DROP DATABASE {}").format(sql.Identifier(db_name)))
+                logging.info(f"Database '{db_name}' dropped successfully!")
+
+        except OperationalError as e:
+            if "does not exist" in str(e):
+                logging.info(f"Database '{db_name}' does not exist; ready to create.")
+            else:
+                logging.error(f"Operational error: {e}")
+                raise e
 
         # Create the database
-        cursor.execute(sql.SQL(f"CREATE DATABASE {db_name}").format(sql.Identifier(db_name)))
+        cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(db_name)))
+        logging.info(f"Database '{db_name}' created successfully!")
 
         # Grant privileges (optional)
-        cursor.execute(sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {}").format(
+        cursor.execute(sql.SQL("GRANT ALL PRIVILEGES ON DATABASE {} TO {};").format(
             sql.Identifier(db_name),
             sql.Identifier(user)
         ))
 
-        logging.info(f"Database '{db_name}' created successfully and privileges granted!")
-
-        # Close cursor and connection
-        cursor.close()
-        conn.close()
+        logging.info(f"Privileges granted on database '{db_name}' to user '{user}'.")
 
     except OperationalError as e:
         logging.error(f"Error: {e}")
         raise e
 
+    finally:
+        # Close cursor and connection
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

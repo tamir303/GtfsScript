@@ -58,7 +58,7 @@ def insert_postgres_table_from_df(
                 return 'TEXT'
 
         # Drop table if exists
-        drop_table_query = f"DROP TABLE IF EXISTS {table_name}"
+        drop_table_query = f"DROP TABLE IF EXISTS {table_name};"
         cursor.execute(drop_table_query)
 
         # Create table query
