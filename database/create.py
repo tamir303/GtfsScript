@@ -37,11 +37,11 @@ def create_database(
             if exists:
                 # If it exists, drop the database
                 cursor.execute(sql.SQL("DROP DATABASE {}").format(sql.Identifier(db_name)))
-                logging.info(f"Database '{db_name}' dropped successfully!")
+                logging.info(f"\033[32mDatabase '{db_name}' dropped successfully!\033[0m")
 
         except OperationalError as e:
             if "does not exist" in str(e):
-                logging.info(f"Database '{db_name}' does not exist; ready to create.")
+                logging.info(f"\033[32mDatabase '{db_name}' does not exist; ready to create.\033[0m")
             else:
                 logging.error(f"Operational error: {e}")
                 raise e
@@ -56,7 +56,7 @@ def create_database(
             sql.Identifier(user)
         ))
 
-        logging.info(f"Privileges granted on database '{db_name}' to user '{user}'.")
+        logging.info(f"\033[32mPrivileges granted on database '{db_name}' to user '{user}'.\033[0m")
 
     except OperationalError as e:
         logging.error(f"Error: {e}")

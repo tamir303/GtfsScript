@@ -3,10 +3,10 @@ import sys
 
 from config import config
 from database.create import create_database
-from database.validate import check_database_existence
 from database.insert import insert_postgres_table_from_df
 from tables.cache import get_gtfs_tables
 from files import get_gtfs_text_files
+from dask.distributed import Client
 
 # Default config file
 DEFAULT_CONFIG_FILE = "config/config.yaml"
@@ -33,18 +33,19 @@ def get_db_config() -> dict:
 def main() -> None:
     """Main function to run the GTFS data processing and insertion script."""
     db_config = get_db_config()
-    logging.info("Starting GTFS data processing and database insertion script.")
+    Client(n_workers=4)
+    logging.info("\033[32mStarting GTFS data processing and database insertion script.\033[0m")
 
     try:
         # Download GTFS files if necessary
         get_gtfs_text_files()
 
-        logging.info("Connecting to database...")
-        logging.info(f"Database name: {db_config['name']}")
-        logging.info(f"Username: {db_config['user']}")
-        logging.info("Password: ********")
-        logging.info(f"Host: {db_config['host']}")
-        logging.info(f"Port: {db_config['port']}")
+        logging.info("\033[32mConnecting to database...\033[0m")
+        logging.info(f"\033[34mDatabase name: {db_config['name']}\033[0m")
+        logging.info(f"\033[34mUsername: {db_config['user']}\033[0m")
+        logging.info("\033[34mPassword: ********\033[0m")
+        logging.info(f"\033[34mHost: {db_config['host']}\033[0m")
+        logging.info(f"\033[34mPort: {db_config['port']}\033[0m")
 
         create_database(db_config["name"], db_config["user"], db_config["password"], db_config["host"], db_config["port"])
 
@@ -58,9 +59,14 @@ def main() -> None:
             use_cache=True
         )
 
+        # Compute the result and trigger actual processing
+        logging.info("\033[32mComputing data, convert to pandas...\033[0m")
+        persisted_df = line_stop_table.persist()
+        result = persisted_df.compute()
+
         # Insert DataFrame into PostgreSQL database
         insert_postgres_table_from_df(
-            line_stop_table,
+            result,
             "line_stops",
             db_config["name"],
             db_config["user"],
